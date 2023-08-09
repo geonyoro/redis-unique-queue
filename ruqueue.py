@@ -1,5 +1,6 @@
 import logging
 import pickle
+import queue
 import random
 import string
 import time
@@ -54,6 +55,9 @@ class Queue:
             conn = self._redis_conn
         return conn.sismember(self._vars["set"], key)
 
+    def _scard(self):
+        return self._redis_conn.scard(self._vars["set"])
+
     def _sadd(self, key, conn=None):
         if conn is None:
             conn = self._redis_conn
@@ -92,10 +96,15 @@ class Queue:
     def _pipeline(self):
         return self._redis_conn.pipeline()
 
-    def put(self, item, key: str) -> bool:
+    def put(self, item, key: str = "") -> bool:
         """
         push an item to the internal list, if it doesn't exist in the set.
+
+        if @param key is not provided, the str(item) is used as the key.
         """
+        if not key:
+            key = str(item)
+
         self.clear_expired()
 
         if self._sismember(key):
@@ -110,16 +119,27 @@ class Queue:
 
         return True
 
+    def task_done(self, key):
+        return self._remove_item(key)
+
+    def _remove_item(self, key):
+        self._srem(key)
+        self._zrem(key)
+
     def clear_expired(self):
         removed = []
         for key in self._zrangebyscore(0, int(time.time())):
-            self._srem(key)
-            self._zrem(key)
             removed.append(key)
+            self._remove_item(key)
         return removed
+
+    def qsize(self):
+        return self._scard()
 
     def get(self):
         pickled_item = self._lpop()
+        if not pickled_item:
+            return None
         unpickled_item = pickle.loads(pickled_item)
 
         key = unpickled_item["key"]
