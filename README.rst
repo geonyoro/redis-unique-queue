@@ -1,7 +1,9 @@
-# redis-unique-queue
+redis-unique-queue
+====================
 A module that combines the use of redis inbuilt data types to build a unique queue for processing and expiry.
 
-## Usage
+Usage
+=====
 Items are put on the queue with an optional key. A duplicate key cannot be added until either: 
 - the previous key that was added has been fully processed.
 - expiry_in_seconds have passed.
