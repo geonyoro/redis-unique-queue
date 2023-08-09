@@ -3,7 +3,7 @@ import pickle
 import random
 import string
 import time
-from typing import Callable, Optional
+from typing import Callable
 
 import redis
 
