@@ -50,6 +50,59 @@ class Queue:
         self._key_gen_func = key_gen_func
         self._setup_vars(var_prefix)
 
+    def put(self, item) -> bool:
+        """
+        push an item to the internal list, if it doesn't exist in the set.
+
+        if @param key is not provided, the str(item) is used as the key.
+        """
+        key = self._key_gen_func(item)
+        LOGGER.debug("Calculated key %s from item %s.", key, item)
+
+        self.clear_expired()
+
+        if self._sismember(key):
+            LOGGER.debug("Key %s already existed in the set.", key)
+            return False
+
+        pickled_item = pickle.dumps({"key": key, "item": item})
+        pipeline = self._pipeline()
+        self._sadd(key, conn=pipeline)
+        self._rpush(pickled_item, conn=pipeline)
+        pipeline.execute()
+
+        return True
+
+    def task_done(self, item):
+        key = self._key_gen_func(item)
+        return self._remove_item(key)
+
+    def clear_expired(self):
+        removed = []
+        for key in self._zrangebyscore(0, int(time.time())):
+            removed.append(key)
+            self._remove_item(key)
+            LOGGER.debug("Removed expired key %s.", key)
+        return removed
+
+    def qsize(self):
+        return self._scard()
+
+    def get(self):
+        pickled_item = self._lpop()
+        if not pickled_item:
+            return None
+        unpickled_item = pickle.loads(pickled_item)
+
+        key = unpickled_item["key"]
+        item = unpickled_item["item"]
+        expiry_time = int(time.time() + self._expiry_in_secs)
+        self._zadd({key: expiry_time})
+        return item
+
+    def get_key_for_item(self, item):
+        return self._key_gen_func(item)
+
     def _setup_vars(self, var_prefix):
         if not var_prefix:
             var_prefix = generate_random_string(6)
@@ -110,56 +163,3 @@ class Queue:
     def _remove_item(self, key):
         self._srem(key)
         self._zrem(key)
-
-    def put(self, item) -> bool:
-        """
-        push an item to the internal list, if it doesn't exist in the set.
-
-        if @param key is not provided, the str(item) is used as the key.
-        """
-        key = self._key_gen_func(item)
-        LOGGER.debug("Calculated key %s from item %s.", key, item)
-
-        self.clear_expired()
-
-        if self._sismember(key):
-            LOGGER.debug("Key %s already existed in the set.", key)
-            return False
-
-        pickled_item = pickle.dumps({"key": key, "item": item})
-        pipeline = self._pipeline()
-        self._sadd(key, conn=pipeline)
-        self._rpush(pickled_item, conn=pipeline)
-        pipeline.execute()
-
-        return True
-
-    def task_done(self, item):
-        key = self._key_gen_func(item)
-        return self._remove_item(key)
-
-    def clear_expired(self):
-        removed = []
-        for key in self._zrangebyscore(0, int(time.time())):
-            removed.append(key)
-            self._remove_item(key)
-            LOGGER.debug("Removed expired key %s.", key)
-        return removed
-
-    def qsize(self):
-        return self._scard()
-
-    def get(self):
-        pickled_item = self._lpop()
-        if not pickled_item:
-            return None
-        unpickled_item = pickle.loads(pickled_item)
-
-        key = unpickled_item["key"]
-        item = unpickled_item["item"]
-        expiry_time = int(time.time() + self._expiry_in_secs)
-        self._zadd({key: expiry_time})
-        return item
-
-    def get_key_for_item(self, item):
-        return self._key_gen_func(item)
