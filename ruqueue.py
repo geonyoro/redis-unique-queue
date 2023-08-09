@@ -3,6 +3,7 @@ import pickle
 import random
 import string
 import time
+from typing import Callable, Optional
 
 import redis
 
@@ -13,6 +14,10 @@ def generate_random_string(length):
     return "".join(
         [random.choice(string.ascii_letters + string.digits) for _ in range(length)]
     )
+
+
+def default_key_gen_func(item):
+    return str(item)
 
 
 class Queue:
@@ -29,9 +34,12 @@ class Queue:
         redis_conn: redis.client.Redis,
         expiry_in_seconds: int,
         var_prefix: str = "",
+        key_gen_func: Callable = default_key_gen_func,
     ):
         """
-        If var_prefix is not provided, it will be auto-generated.
+        @param var_prefix
+        @param key_gen_func is not provided, it will be auto-generated.
+
         """
         self._redis_conn = redis_conn
 
@@ -39,6 +47,10 @@ class Queue:
         assert expiry_in_seconds > 0
         self._expiry_in_secs = expiry_in_seconds
 
+        self._key_gen_func = key_gen_func
+        self._setup_vars(var_prefix)
+
+    def _setup_vars(self, var_prefix):
         if not var_prefix:
             var_prefix = generate_random_string(6)
 
@@ -95,14 +107,18 @@ class Queue:
     def _pipeline(self):
         return self._redis_conn.pipeline()
 
-    def put(self, item, key: str = "") -> bool:
+    def _remove_item(self, key):
+        self._srem(key)
+        self._zrem(key)
+
+    def put(self, item) -> bool:
         """
         push an item to the internal list, if it doesn't exist in the set.
 
         if @param key is not provided, the str(item) is used as the key.
         """
-        if not key:
-            key = str(item)
+        key = self._key_gen_func(item)
+        LOGGER.debug("Calculated key %s from item %s.", key, item)
 
         self.clear_expired()
 
@@ -118,12 +134,9 @@ class Queue:
 
         return True
 
-    def task_done(self, key):
+    def task_done(self, item):
+        key = self._key_gen_func(item)
         return self._remove_item(key)
-
-    def _remove_item(self, key):
-        self._srem(key)
-        self._zrem(key)
 
     def clear_expired(self):
         removed = []
@@ -147,3 +160,6 @@ class Queue:
         expiry_time = int(time.time() + self._expiry_in_secs)
         self._zadd({key: expiry_time})
         return item
+
+    def get_key_for_item(self, item):
+        return self._key_gen_func(item)
