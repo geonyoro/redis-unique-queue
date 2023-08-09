@@ -39,5 +39,4 @@ Examples
     uqueue.task_done(200)
     print("Expected size 0:", uqueue.qsize())
 
-
-main()
+    print("Expected item None:", uqueue.get())
