@@ -12,6 +12,12 @@ Examples
 --------
 .. code-block:: python
 
+    import time
+
+    import redis
+
+    import ruqueue
+
     expiry_in_seconds = 1
     conn = redis.Redis()
     uqueue = ruqueue.Queue(redis_conn=conn, expiry_in_seconds=expiry_in_seconds)
