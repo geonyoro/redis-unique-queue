@@ -49,26 +49,48 @@ class Queue:
         }
         LOGGER.debug("Vars created are %s", self._vars)
 
-    def _sismember(self, key):
-        return self._redis_conn.sismember(self._vars["set"], key)
+    def _sismember(self, key, conn=None):
+        if conn is None:
+            conn = self._redis_conn
+        return conn.sismember(self._vars["set"], key)
 
-    def _sadd(self, key):
-        return self._redis_conn.sadd(self._vars["set"], key)
+    def _sadd(self, key, conn=None):
+        if conn is None:
+            conn = self._redis_conn
+        return conn.sadd(self._vars["set"], key)
 
-    def _srem(self, key):
-        return self._redis_conn.srem(self._vars["set"], key)
+    def _srem(self, key, conn=None):
+        if conn is None:
+            conn = self._redis_conn
+        return conn.srem(self._vars["set"], key)
 
-    def _zrangebyscore(self, *args):
-        return self._redis_conn.zrangebyscore(self._vars["zset"], *args)
+    def _zrangebyscore(self, *args, conn=None):
+        if conn is None:
+            conn = self._redis_conn
+        return conn.zrangebyscore(self._vars["zset"], *args)
 
-    def _zrem(self, key):
-        return self._redis_conn.zrem(self._vars["zset"], key)
+    def _zrem(self, key, conn=None):
+        if conn is None:
+            conn = self._redis_conn
+        return conn.zrem(self._vars["zset"], key)
 
-    def _zadd(self, mapping):
-        return self._redis_conn.zadd(self._vars["zset"], mapping)
+    def _zadd(self, mapping, conn=None):
+        if conn is None:
+            conn = self._redis_conn
+        return conn.zadd(self._vars["zset"], mapping)
 
-    def _lpop(self):
-        return self._redis_conn.lpop(self._vars["list"])
+    def _lpop(self, conn=None):
+        if conn is None:
+            conn = self._redis_conn
+        return conn.lpop(self._vars["list"])
+
+    def _rpush(self, item, conn=None):
+        if conn is None:
+            conn = self._redis_conn
+        return conn.rpush(self._vars["list"], item)
+
+    def _pipeline(self):
+        return self._redis_conn.pipeline()
 
     def put(self, item, key: str) -> bool:
         """
@@ -80,10 +102,11 @@ class Queue:
             LOGGER.debug("Key %s already existed in the set.", key)
             return False
 
-        # TODO: wrap this as a transaction
-        self._sadd(key)
         pickled_item = pickle.dumps({"key": key, "item": item})
-        self._redis_conn.rpush(self._vars["list"], pickled_item)
+        pipeline = self._pipeline()
+        self._sadd(key, conn=pipeline)
+        self._rpush(pickled_item, conn=pipeline)
+        pipeline.execute()
 
         return True
 
