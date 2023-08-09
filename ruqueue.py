@@ -1,6 +1,5 @@
 import logging
 import pickle
-import queue
 import random
 import string
 import time
@@ -131,6 +130,7 @@ class Queue:
         for key in self._zrangebyscore(0, int(time.time())):
             removed.append(key)
             self._remove_item(key)
+            LOGGER.debug("Removed expired key %s.", key)
         return removed
 
     def qsize(self):
