@@ -8,6 +8,7 @@ Items are put on the queue with an optional key. A duplicate key cannot be added
 - the previous key that was added has been fully processed.
 - expiry_in_seconds have passed.
 
+The unique queue creates 3 datastructures to ensure the keys are unique.  To ensure the keys don't linger after usage, all commands reset the ttl on the datastructures.
 Examples
 --------
 .. code-block:: python

@@ -7,7 +7,7 @@ with open(os.path.join(os.path.dirname(__file__), "README.rst")) as wfile:
 
 setup(
     name="redis-unique-queue",
-    version="0.0.2",
+    version="0.0.3",
     description=(
         "A module that combines the use of redis in-built data types to build a"
         " unique queue for processing and expiry."
