@@ -1,11 +1,22 @@
 BUILD
 ====================
 
-- Install the requirements.dev.txt requirements.
-pip install -r requirements.dev.txt
+Install the requirements.dev.txt requirements.
+.. code-block:: bash
+
+  pip install -r requirements.dev.txt
 
 Build the project
-`python3 -m build`
+.. code-block:: bash
 
-Use twine to upload the build directory.
-python3 -m twine upload --repository testpypi dist/*
+  python3 -m build
+
+Use twine to upload the build directory for testing first.
+.. code-block:: bash
+
+  python3 -m twine upload --repository testpypi dist/*
+
+Finally, use twine to upload the build directory.
+.. code-block:: bash
+
+  python3 -m twine upload dist/*
