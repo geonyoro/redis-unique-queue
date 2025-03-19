@@ -31,20 +31,20 @@ Examples
     uqueue.put(200)  # not added again
     print("Expected size 2:", uqueue.qsize())
 
-    # get an item
-    print("Expected item 100:", uqueue.get())
+    print("Expected item 100:", uqueue.get()) # get an item
 
-    # go past expiry seconds to test
-    time.sleep(expiry_in_seconds)
+    
+    time.sleep(expiry_in_seconds) # go past expiry seconds to test
 
     # item 100 has expired
-    print(
-        "Items that expired:", uqueue.clear_expired()
-    )  # [100] -> a list of items that expires
+
+    print("Items that expired:", uqueue.clear_expired())  # [100] -> a list of items that expires
 
     print("Expected size 1:", uqueue.qsize())
-    print("Expected item 200:", uqueue.get())
-    # we have finished handling 200
+
+    print("Expected item 200:", uqueue.get()) # we have finished handling 200
+    
+
     uqueue.task_done(200)
     print("Expected size 0:", uqueue.qsize())
 
