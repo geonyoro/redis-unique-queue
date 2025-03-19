@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "redis-unique-queue"
+version = "0.0.5"
+authors = [
+  { name="George Nyoro", email="geonyoro@gmail.com" },
+]
+description = "A module that combines the use of redis in-built data types to build a unique queue for processing and expiry."
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "redis>=4.6.0",
+]
+classifiers = [
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3.8",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+
+[project.urls]
+Homepage = "https://github.com/geonyoro/redis-unique-queue"
+Issues = "https://github.com/geonyoro/redis-unique-queue/issues"
